@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Sample survey</name>
+    <Schema name="parcel" id="parcel">
+      <SimpleField name="owner" type="string"/>
+      <SimpleField name="zone" type="int"/>
+    </Schema>
+    <Folder>
+      <name>Parcels</name>
+      <Placemark id="p1">
+        <name>North parcel</name>
+        <ExtendedData><SchemaData schemaUrl="#parcel">
+          <SimpleData name="owner">Asha</SimpleData><SimpleData name="zone">3</SimpleData>
+        </SchemaData></ExtendedData>
+        <Polygon><outerBoundaryIs><LinearRing><coordinates>77.59,12.97 77.5904,12.97 77.5904,12.9704 77.59,12.9704 77.59,12.97</coordinates></LinearRing></outerBoundaryIs></Polygon>
+      </Placemark>
+      <Placemark id="p2">
+        <name>South parcel</name>
+        <Polygon><outerBoundaryIs><LinearRing><coordinates>77.591,12.969 77.5916,12.969 77.5916,12.9695 77.591,12.9695 77.591,12.969</coordinates></LinearRing></outerBoundaryIs></Polygon>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Roads</name>
+      <Placemark id="r1">
+        <name>Access road</name>
+        <LineString><coordinates>77.5890,12.9695 77.5900,12.9702 77.5915,12.9710</coordinates></LineString>
+      </Placemark>
+      <Placemark id="g1">
+        <name>Gate</name>
+        <Point><coordinates>77.5900,12.9700</coordinates></Point>
+      </Placemark>
+      <Placemark id="d1">
+        <name>Draft (no geometry yet)</name>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>
