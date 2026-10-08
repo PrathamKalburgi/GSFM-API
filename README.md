@@ -9,7 +9,9 @@ A FastAPI service that accepts **KML** files and **zipped Shapefiles**, stores e
 - `GET /api/files/{id}/measurements/` per-feature results with a whole-file summary
 - Extras: paginated listing, deletion, health check, request IDs and JSON logs, a documented error format, Alembic migrations, Docker and CI on SQLite and PostgreSQL.
 
-Interactive docs are served at `/docs` once the app is running. The implementation follows [PROJECT_PLAN.md](docs/PROJECT_PLAN.md).
+**Live deployment:** <https://gsfm-api.onrender.com> (interactive docs at <https://gsfm-api.onrender.com/docs>, health check at <https://gsfm-api.onrender.com/health>). Backed by Supabase PostgreSQL.
+
+Interactive docs are also served locally at `/docs` once the app is running. The implementation follows [PROJECT_PLAN.md](docs/PROJECT_PLAN.md).
 
 ## 1. Quick start
 
@@ -38,6 +40,10 @@ curl http://localhost:8000/health
 
 The container runs as a non-root user, applies migrations, then starts the server. Pass `-e DATABASE_URL=...` to use PostgreSQL instead of the SQLite file in the volume.
 
+**Render**
+
+The repository includes a [`render.yaml`](render.yaml) blueprint. To deploy to Render, create a Web Service pointing to this repository with runtime **Docker**, set `DATABASE_URL` to your Supabase connection string, and set the health check path to `/health`.
+
 **Configuration** (environment variables or a local `.env`, see `.env.example`)
 
 | Variable | Default | Meaning |
@@ -60,11 +66,11 @@ SQLite is the default so anyone can run the project locally. Supabase PostgreSQL
 - **Connection mode.** Use the **session pooler** or the direct connection, for the API and for Alembic. The direct host can be IPv6-only on some plans; if connections fail, use the session pooler string. If you choose the **transaction pooler** (port 6543), the app disables prepared statements for you (`prepare_threshold=None`).
 - **Row Level Security.** The PostgreSQL branch of the migration enables RLS on both tables and adds no policies. Tables created by SQL migrations in the `public` schema are otherwise reachable through Supabase's auto-generated Data API with the public anon key. The API connects as the table-owning role, which bypasses RLS, so it is unaffected. See [Connecting to your database](https://supabase.com/docs/guides/database/connecting-to-postgres).
 
-**Verification status.** The full test suite passes on PostgreSQL 16 (local and in CI), including the migration, JSONB columns, RLS and cascade delete. Manual run against a real Supabase project (migrate, upload, list, delete): _record the date and result here._
+**Verification status.** The full test suite passes on PostgreSQL 16 (local and in CI), including the migration, JSONB columns, RLS and cascade delete. Verified live on Supabase PostgreSQL 17 via Render deployment on 2026-10-08: migration `0001 (head)` applied, KML and Shapefile uploads processed and measured, JSONB attributes stored, pagination verified, and foreign-key cascade deletes confirmed.
 
 ## 3. API
 
-All endpoints use the `/api` prefix (except `/health`), JSON is snake_case, and file IDs are UUIDs. Routes are declared with the trailing slash exactly as in the brief. Every response carries an `X-Request-ID` header (your value if you send a safe one, otherwise a generated one). The samples below use the files in [`samples/`](samples/) and show real output.
+All endpoints use the `/api` prefix (except `/health`), JSON is snake_case, and file IDs are UUIDs. Routes are declared with the trailing slash exactly as in the brief. Every response carries an `X-Request-ID` header (your value if you send a safe one, otherwise a generated one). The samples below use the files in [`samples/`](samples/) and show real output against `http://localhost:8000` (substitute `https://gsfm-api.onrender.com` for the live deployment).
 
 ### Upload: `POST /api/files/`
 
