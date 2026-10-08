@@ -1,6 +1,6 @@
 # Geospatial File Measurement API
 
-[![CI](https://github.com/YOUR_GITHUB_USERNAME/geospatial-file-measurement/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_GITHUB_USERNAME/geospatial-file-measurement/actions/workflows/ci.yml)
+[![CI](https://github.com/PrathamKalburgi/GSFM-API/actions/workflows/ci.yml/badge.svg)](https://github.com/PrathamKalburgi/GSFM-API/actions/workflows/ci.yml)
 
 A FastAPI service that accepts **KML** files and **zipped Shapefiles**, stores every feature (index, geometry type, geometry, CRS, properties) and returns reliable **area** (m²) and **length** (m) measurements. Geometry is always projected to a metric CRS before it is measured; coordinates in degrees are never measured directly.
 
