@@ -10,4 +10,5 @@ __pycache__
 data
 tests
 samples
-PROJECT_PLAN.md
+docs
+*.docx

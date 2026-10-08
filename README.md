@@ -9,7 +9,7 @@ A FastAPI service that accepts **KML** files and **zipped Shapefiles**, stores e
 - `GET /api/files/{id}/measurements/` per-feature results with a whole-file summary
 - Extras: paginated listing, deletion, health check, request IDs and JSON logs, a documented error format, Alembic migrations, Docker and CI on SQLite and PostgreSQL.
 
-Interactive docs are served at `/docs` once the app is running. The implementation follows [PROJECT_PLAN.md](PROJECT_PLAN.md).
+Interactive docs are served at `/docs` once the app is running. The implementation follows [PROJECT_PLAN.md](docs/PROJECT_PLAN.md).
 
 ## 1. Quick start
 
