@@ -7,9 +7,9 @@ A FastAPI service that accepts **KML** files and **zipped Shapefiles**, stores e
 - `POST /api/files/` upload a file
 - `GET /api/files/{id}/` file details
 - `GET /api/files/{id}/measurements/` per-feature results with a whole-file summary
-- Extras: paginated listing, deletion, health check, request IDs and JSON logs, a documented error format, Alembic migrations, Docker and CI on SQLite and PostgreSQL.
+- Extras: web measurement workbench at `/`, paginated listing, deletion, health check, request IDs and JSON logs, a documented error format, Alembic migrations, Docker and CI on SQLite and PostgreSQL.
 
-**Live deployment:** <https://gsfm-api.onrender.com> (interactive docs at <https://gsfm-api.onrender.com/docs>, health check at <https://gsfm-api.onrender.com/health>). Backed by Supabase PostgreSQL.
+**Live deployment:** <https://gsfm-api.onrender.com> (interactive workbench at `/`, Swagger docs at `/docs`, health check at `/health`). Backed by Supabase PostgreSQL.
 
 Interactive docs are also served locally at `/docs` once the app is running. The implementation follows [PROJECT_PLAN.md](docs/PROJECT_PLAN.md).
 
@@ -330,7 +330,9 @@ app/
 ├── main.py                  app factory: middleware, exception handlers, routers
 ├── api/routes/
 │   ├── files.py             HTTP contract only: parameters, status codes, schemas, OpenAPI
-│   └── health.py
+│   ├── health.py            health and DB connectivity check
+│   └── ui.py                web measurement sandbox and sample assets
+├── static/                  web interface (index.html) and bundled samples
 ├── core/
 │   ├── config.py            settings from environment variables, DB URL normalisation
 │   ├── errors.py            AppError, error codes, exception handlers
