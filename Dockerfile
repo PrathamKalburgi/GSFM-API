@@ -10,7 +10,6 @@ WORKDIR /app
 COPY pyproject.toml requirements.lock README.md alembic.ini ./
 COPY app ./app
 COPY alembic ./alembic
-COPY samples ./samples
 RUN pip install -c requirements.lock .
 
 # Run as a non-root user; the default SQLite database lives in /app/data.

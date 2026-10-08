@@ -9,6 +9,5 @@ __pycache__
 .env
 data
 tests
-samples
 docs
 *.docx
