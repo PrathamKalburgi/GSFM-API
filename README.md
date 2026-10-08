@@ -323,6 +323,65 @@ Messages are written for users. Stack traces, file paths and credentials are onl
 
 ## 4. Architecture
 
+### System architecture
+
+```mermaid
+flowchart TD
+    subgraph Clients["Clients"]
+        Browser["Web Browser (Workbench UI)"]
+        CLI["API Clients (cURL / Python / JS)"]
+    end
+
+    subgraph Service["FastAPI Service (Docker / Render)"]
+        direction TB
+        subgraph Middleware["Middleware Layer"]
+            MW_Size["BodySizeLimitMiddleware (Upload byte guard)"]
+            MW_ReqID["RequestIdMiddleware (Tracing & JSON logging)"]
+        end
+
+        subgraph Routes["Routing Layer"]
+            R_UI["GET / (Web Workbench)"]
+            R_Files["/api/files/ (Upload, Details, Measurements, Delete)"]
+            R_Health["GET /health (Liveness & DB connectivity)"]
+        end
+
+        subgraph Services["Geospatial Engine"]
+            S_Upload["UploadService (Orchestrator)"]
+            S_Archive["archive.py (ZIP bomb guard & member filter)"]
+            S_Reader["reader.py (Pyogrio layer extraction)"]
+            S_CRS["crs.py (Extent check & UTM selection)"]
+            S_Measure["measurement.py (2D planar metric engine)"]
+        end
+
+        subgraph Persistence["Data Layer"]
+            Repo["FileRepository (Atomic multi-row transactions)"]
+        end
+    end
+
+    subgraph Storage["Database Layer"]
+        DB_Postgres[("Supabase PostgreSQL 17\nJSONB columns, RLS enabled")]
+        DB_SQLite[("Local SQLite 3\ndata/app.db")]
+    end
+
+    Browser -->|"HTTP GET / POST"| MW_Size
+    CLI -->|"HTTP multipart / JSON"| MW_Size
+    MW_Size --> MW_ReqID
+    MW_ReqID --> Routes
+
+    R_UI -.->|"Serves"| S_Static["Static Assets & Samples"]
+    R_Files --> S_Upload
+    R_Health --> Repo
+
+    S_Upload --> S_Archive
+    S_Archive --> S_Reader
+    S_Reader --> S_CRS
+    S_CRS --> S_Measure
+    S_Measure --> Repo
+
+    Repo -->|"Production"| DB_Postgres
+    Repo -->|"Local Default"| DB_SQLite
+```
+
 ### Application structure
 
 ```text
@@ -351,6 +410,53 @@ app/
 ```
 
 Routes contain no SQL and no parsing. `crs.py` and `measurement.py` import neither FastAPI nor SQLAlchemy, which is what lets them be tested against an independent oracle in isolation.
+
+### Processing pipeline
+
+```mermaid
+flowchart TD
+    Start(["Upload File (.kml or .zip)"]) --> CheckSize{"Body Size <= 50MB?"}
+    CheckSize -- "No" --> Err413["413 Payload Too Large"]
+    CheckSize -- "Yes" --> SaveTemp["Stream to isolated temp directory"]
+
+    SaveTemp --> DetectFormat{"Detect Format"}
+    DetectFormat -- "ZIP (Shapefile)" --> SafeExtract["Inspect members & filter whitelist (.shp, .shx, .dbf, .prj)"]
+    DetectFormat -- "KML" --> DirectRead["Open KML document"]
+    DetectFormat -- "Other / KMZ" --> Err400["400 / 422 Invalid Format"]
+
+    SafeExtract --> ReadLayers["Read Layers distinctly (avoid attribute leaking)"]
+    DirectRead --> ReadLayers
+
+    ReadLayers --> CheckCRS{"Detect Source CRS"}
+    CheckCRS -- "Missing" --> ClientCRS{"Client CRS provided?"}
+    ClientCRS -- "No" --> ErrCRS["422 missing_source_crs"]
+    ClientCRS -- "Yes" --> SetCRS["Apply Client CRS override"]
+    CheckCRS -- "Found" --> SetCRS
+
+    SetCRS --> ExtentGuard{"Bounding Extent <= 30 deg?"}
+    ExtentGuard -- "No" --> ErrExtent["422 extent_too_large"]
+    ExtentGuard -- "Yes" --> SelectCRS["Derive optimal Metric CRS (UTM Zone or UPS)"]
+
+    SelectCRS --> LoopFeatures["Iterate Features"]
+    
+    subgraph FeaturePipeline["Per-Feature Measurement"]
+        CheckGeom{"Geometry Valid?"}
+        CheckGeom -- "Point" --> MarkNotReq["Status: NOT_REQUIRED"]
+        CheckGeom -- "Empty / Invalid" --> MarkInvalid["Status: INVALID_GEOMETRY"]
+        CheckGeom -- "Polygon / Line" --> Transform["shapely.force_2d + Reproject to Metric UTM"]
+        Transform --> ComputeMetrics["Compute Area (m2) and Length (m)"]
+        ComputeMetrics --> MarkMeasured["Status: MEASURED"]
+    end
+
+    LoopFeatures --> CheckGeom
+    MarkNotReq --> Aggregate["Collect Feature Result"]
+    MarkInvalid --> Aggregate
+    MarkMeasured --> Aggregate
+
+    Aggregate --> AtomicSave["FileRepository: Insert File & Features in 1 DB Transaction"]
+    AtomicSave --> Cleanup["Clean up temporary directories"]
+    Cleanup --> Response(["Return 201 Created JSON"])
+```
 
 ### File-processing flow
 
